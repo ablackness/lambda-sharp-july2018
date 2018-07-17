@@ -57,10 +57,9 @@ NOTES:
 
 ## Level 2 - Add DeleteMessages Lambda Function
 
-The next piece of functionality we would like to add is the ability to clear out all messages from the DynamoDB table. Add a new entry under the `Functions` section of Deploy.yml for _DeleteMessages_. A new C# project similar to those that exist for the other Lambda functions will need to be added. The λ# tool uses naming conventions to find the corresponding project for function entries in the deploy file so it is important to follow that convention here. The naming convention is `{StackName}.{FunctionName}` so our new project should be called `Messages.DeleteMessages` and the name of the function in the Deploy file should be `DeleteMessages`. The csproj file must exist under a folder of the same name.
+The next piece of functionality we would like to add is the ability to clear out all messages from the DynamoDB table. Add a new entry under the `Functions` section of Deploy.yml for _DeleteMessages_. A new C# project similar to those that exist for the other Lambda functions will need to be added. The λ# tool uses naming conventions to find the project and provides a utility to create a new project which follows the convention and contains all necessary references. In the directory with the Deploy.yml file execute the following command:
 
-NOTES:
-- Be sure to add the MindTouch.LambdaSharp NuGet package to your new project
+`lst new function --name Messages.DeleteMessages`
 
 ## Level 3 - Add Another Source For Messages
 
