@@ -1,0 +1,52 @@
+Version: "2018-07-04"
+
+Name: Messages
+
+Description: LambdaSharp demo app
+
+Parameters:
+
+  - Name: MessageTable
+    Description: DynamoDb table for storing received messages
+    Resource:
+      Type: AWS::DynamoDB::Table
+      Allow: ReadWrite
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: MessageId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: MessageId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+  - Name: IngestionBucket
+    Description: S3 bucket to bulk load data
+    Resource:
+      Type: AWS::S3::Bucket
+      Allow: ReadWrite
+
+Functions:
+
+  - Name: PostMessages
+    Description: Record message in a DynamoDB table
+    Memory: 128
+    Timeout: 30
+    Sources:
+      - Api: POST:/
+
+  - Name: GetMessages
+    Description: Show messages in a DynamoDB table
+    Memory: 128
+    Timeout: 30
+    Sources:
+      - Api: GET:/
+
+  - Name: LoadMessages
+    Description: Load messages in to a DynamoDB table from S3
+    Memory: 128
+    Timeout: 30
+    Sources:
+      - S3: IngestionBucket
