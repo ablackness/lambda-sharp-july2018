@@ -17,7 +17,7 @@ The following tools and accounts are required to complete these instructions.
 
 ## Level 0 - Setup λ#
 - Ensure you have your AWS credentials file set up in the .aws folder under your home directory
-- Clone λ# repository <[GitHub - bjorg/LambdaSharpTool at WIP-RC1](https://github.com/bjorg/LambdaSharpTool/tree/WIP-RC1)>
+- Clone λ# repository <https://github.com/LambdaSharp/LambdaSharpTool>
 - Clone Messages repository <https://github.com/LambdaSharp/July2018-LambdaSharp>
 - Setup command alias for the LambdaSharp tool
   - `$LAMBDASHARP=/path/to/LambdaSharpRepo`
