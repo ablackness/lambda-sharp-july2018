@@ -39,22 +39,39 @@ lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy
 ```
 
 Now that you have deployed the Messages stack you will have the following infrastructure in your AWS account:
-- (DynamoDB Table) MessageTable
+
+<details><summary>(DynamoDB Table) MessageTable</summary>
+
   - Stores messages with a unique identifier (_MessageId_) and a source field
-- (S3 Bucket) IngestionBucket
-  - A bucket to drop text files in to to be loaded into _MessageTable_. Sends event notifications to _LoadMessages_
-- (Lambda Function) PostMessages
+</details>
+<details><summary>(S3 Bucket) IngestionBucket</summary>
+
+  - A bucket to drop text files in to to be loaded into `_MessageTable_`. Sends event notifications to `_LoadMessages_`
+</details>
+<details><summary>(Lambda Function) PostMessages</summary>
+
   - Recieves a message from API Gateway and writes the body as a message to _MessageTable_
-- (Lambda Function) GetMessages
+</details>
+<details><summary>(Lambda Function) GetMessages</summary>
+
   - Reads from _MessageTable_ and returns list of all messages available
-- (Lambda Function) LoadMessages
+</details>
+<details><summary>(Lambda Function) LoadMessages</summary>
+
   - Reads from _MessageTable_ and returns list of all messages available. This function is not complete and is to be completed by the user.
-- (API Gateway Endpoint) POST:/
+</details>
+<details><summary>(API Gateway Endpoint) POST:/</summary>
+
   - Sends payload to _PostMessages_ Lambda function
-- (API Gateway Endpoint) GET:/
+</details>
+<details><summary>(API Gateway Endpoint) GET:/</summary>
+
   - Sends payload to _GetMessages_ Lambda function
-- (IAM Role)
+</details>
+<details><summary>(IAM Role)</summary>
+
   - All necessary permissioning is granted
+</details>
 
 Once the stack is deployed you can post to the API endpoint that is output by the tool. The body of the request will be 
 stored as a message in DynamoDB. All messages can be retrieved by issuing a GET request to the same endpoint.
