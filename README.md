@@ -14,21 +14,21 @@ The following tools and accounts are required to complete these instructions.
 - [Complete Step 1 of the AWS Lambda Getting Started Guide](http://docs.aws.amazon.com/lambda/latest/dg/setup.html)
   - Setup an AWS account
   - [Setup the AWS CLI](https://docs.aws.amazon.com/lambda/latest/dg/setup-awscli.html)
-- .NET Core 2+ is required
+- .NET Core 2.1 is required
   - <https://www.microsoft.com/net/learn/get-started>
 
 ## Level 0 - Setup λ#
 - Ensure you have your AWS credentials file set up in the .aws folder under your home directory
-- Clone λ# repository <https://github.com/LambdaSharp/LambdaSharpTool>
-- Clone Messages repository <https://github.com/LambdaSharp/July2018-LambdaSharp>
+- Clone λ# repo <https://github.com/LambdaSharp/LambdaSharpTool>
+- Clone Messages App repo <https://github.com/LambdaSharp/July2018-LambdaSharp>
 - Setup command alias for the LambdaSharp tool
   - `$LAMBDASHARP=/path/to/LambdaSharpRepo`
   - `alias lst="dotnet run -p $LAMBDASHARP/src/MindTouch.LambdaSharp.Tool/MindTouch.LambdaSharp.Tool.csproj --"`
 - Bootstrap deployment
   - This step provides some necessary infrastructure to your AWS account.
-  - `lst deploy --bootstrap --deployment {DeploymentName} --input /path/to/LambdaSharpRepo/BootStrap/LambdaSharp/Deploy.yml`
+  - `lst deploy --bootstrap --deployment {DeploymentName} --input $LAMBDASHARP/BootStrap/LambdaSharp/Deploy.yml`
 - Deploy the Messages stack to the same deployment
-  - `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/BootStrap/LambdaSharp/Deploy.yml`
+  - `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml`
 
 Now that you have deployed the Messages stack you will have the following infrastructure in your AWS account:
 - (DynamoDB Table) MessageTable
@@ -48,9 +48,13 @@ Now that you have deployed the Messages stack you will have the following infras
 - (IAM Role)
   - All necessary permissioning is granted
 
+Once the stack is deployed you can post to the API endpoint that is output by the tool. The body of the request will be stored as a message in DynamoDB. All messages can be retrieved by issuing a GET request to the same endpoint.
+
 ## Level 1 - Implement Bulk Load Lambda Function
 
 The S3 bucket that we created sends CreateObject notifications to the LoadMessages Lambda function. This function, however, does not do anything with the message. The challenge here is to complete the Lambda function code so that it will read the contents of the text file that was uploaded and consider each line a message that should be written into the DynamoDB table.
+
+Running `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml` again will update the Cloudformation stack with all of your latest changes. Once you have deployed your code upload the text file located at `/path/to/MessagesAppRepo/SampleTextMessages.txt` to the IngestionBucket, which will invoke the bulk load Lambda function. After a few seconds send a GET request to the API Gateway endpoint to verify the messages were added to the data store.
 
 NOTES: 
 - The "source" field should be "S3" here.
@@ -63,6 +67,8 @@ The next piece of functionality we would like to add is the ability to clear out
 
 `lst new function --name Messages.DeleteMessages`
 
+The new function inherits from ALambdaFunction, which has limited functionality. Since we would like this to be an API Gateway function you can replace `ALambdaFunction` at the class definition with `ALambdaApiGatewayFunction`. You can then remove the `Task<object> FunctionHandlerAsync(Stream stream, ILambdaContext context)` method. Next add a method with the signature `override Task<APIGatewayProxyResponse> HandleRequestAsync(APIGatewayProxyRequest request, ILambdaContext context)` as that is required by `ALambdaApiGatewayFunction`.
+
 ## Level 3 - Add Another Source For Messages
 
 We can now add messages to the DynamoDB table via API Gateway and S3. Choose another source (SNS, SQS, etc) to populate messages and add another lambda function to do so. Examples of sources can be found in the LamdbaSharp repo
@@ -71,12 +77,12 @@ We can now add messages to the DynamoDB table via API Gateway and S3. Choose ano
 
 ![boss](http://images2.fanpop.com/image/photos/10400000/Bowser-nintendo-villains-10403203-500-413.jpg)
 
-Create a new stack (new Deploy.yml file and corresponding csprojs) that will interact with the DynamoDB table. Adding the key `Export` with a value of `/{{Deployment}}/dynamo` will populate the value of the DynamoDB table's name in that location within parameter store. In your new deploy file add the following section under `Parameters`:
+Create a new stack (new Deploy.yml file and corresponding csprojs) that will interact with the DynamoDB table. Adding the key `Export` with a value of `dynamo` will populate the value of the DynamoDB table's name `/{Deployment}/Messages/dynamo` in parameter store since 'Messages' is the name specified in this deploy file. In your new deploy file add the following section under `Parameters`:
 
 ```
   - Name: MessageTable
     Description: Imported DynamoDb table for storing received messages
-    Import: /{{Deployment}}/dynamo
+    Import: Messages/dynamo
     Resource:
       Type: AWS::DynamoDB::Table
       Allow: Read

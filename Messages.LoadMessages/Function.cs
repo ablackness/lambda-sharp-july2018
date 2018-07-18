@@ -19,12 +19,14 @@
  * limitations under the License.
  */
 
+using System;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Messages.Tables;
 using MindTouch.LambdaSharp;
 using Amazon.S3.Util;
+using Newtonsoft.Json;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -46,14 +48,15 @@ namespace Messages.LoadMessages {
         }
 
         public override async Task<object> ProcessMessageAsync(S3EventNotification message, ILambdaContext context) {
-
+            LogInfo(JsonConvert.SerializeObject(message));
+            
             // Use S3EventNotification to get location of the file which was uploaded
 
             // Read S3 object contents
                 
             // Separate messages by line ending
 
-            // Write messages to Dynamodb
+            // Use BatchInsertMessagesAsync from the Messages.Tables library to write messages to DynamoDB
             return null;
         }
     }
