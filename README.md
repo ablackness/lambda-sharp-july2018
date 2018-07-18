@@ -5,6 +5,8 @@ In this challenge we're going to learn how to use MindTouch's λ# tool to turn s
 The architecture should look like this:
 ![stack](flow.png)
 
+Please follow the teardown instructions at the bottom of this readme when the challenge is complete to avoid unnecessary charges from AWS.
+
 ## Pre-requisites
 
 The following tools and accounts are required to complete these instructions.
@@ -84,3 +86,8 @@ With this section you will have read access to the DynamoDB talbe from the Messa
 
 NOTES:
 - The Name value in the root of the Deploy file must be different than any other stack you have defined (in this case, Messages).
+
+
+## Teardown
+
+Since all of the infrastructure was deployed with CloudFormation it is easy to get rid of all of it. In the AWS console navigate to the CloudFormation dashboard. Find your stack (it will me named {Deployment}-Messages). Click the checkbox next to it, click the `Actions` button, and select `Change termination protection`. When the dialog pops up click the `Yes, Disable` button. After the page refreshes click `Actions` again and select `Delete Stack` then confirm when the dialog pops up. The stack will change status to `DELETE_IN_PROGRESS` for about a minute then you will see that it changes to `DELETE_FAILED` after a refresh of the page. The delete fails since we have created an S3 bucket which cannot be automatically deleted by CloudFormation. The next step is to once again select `Actions` and `Delete Stack`. This time when the confirmation dialog pops up click the checkbox for IngestionBucket, acknowledging that it will not be deleted before clicking `Yes, Delete`. Repeat this process for the {Deployment}-LambdaSharp stack then, navigate to the S3 console to delete the S3 buckets that were created for those two stacks.
