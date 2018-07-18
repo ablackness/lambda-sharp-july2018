@@ -65,6 +65,8 @@ The next piece of functionality we would like to add is the ability to clear out
 
 `lst new function --name Messages.DeleteMessages`
 
+The new function inherits from ALambdaFunction, which has limited functionality. Since we would like this to be an API Gateway function you can replace `ALambdaFunction` at the class definition with `ALambdaApiGatewayFunction`. You can then remove the `Task<object> FunctionHandlerAsync(Stream stream, ILambdaContext context)` method with `Task<APIGatewayProxyResponse> HandleRequestAsync(APIGatewayProxyRequest request, ILambdaContext context)`.
+
 ## Level 3 - Add Another Source For Messages
 
 We can now add messages to the DynamoDB table via API Gateway and S3. Choose another source (SNS, SQS, etc) to populate messages and add another lambda function to do so. Examples of sources can be found in the LamdbaSharp repo
