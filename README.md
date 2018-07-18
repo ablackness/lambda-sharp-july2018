@@ -65,7 +65,7 @@ The next piece of functionality we would like to add is the ability to clear out
 
 `lst new function --name Messages.DeleteMessages`
 
-The new function inherits from ALambdaFunction, which has limited functionality. Since we would like this to be an API Gateway function you can replace `ALambdaFunction` at the class definition with `ALambdaApiGatewayFunction`. You can then remove the `Task<object> FunctionHandlerAsync(Stream stream, ILambdaContext context)` method with `Task<APIGatewayProxyResponse> HandleRequestAsync(APIGatewayProxyRequest request, ILambdaContext context)`.
+The new function inherits from ALambdaFunction, which has limited functionality. Since we would like this to be an API Gateway function you can replace `ALambdaFunction` at the class definition with `ALambdaApiGatewayFunction`. You can then remove the `Task<object> FunctionHandlerAsync(Stream stream, ILambdaContext context)` method. Next add a method with the signature `override Task<APIGatewayProxyResponse> HandleRequestAsync(APIGatewayProxyRequest request, ILambdaContext context)` as that is required by `ALambdaApiGatewayFunction`.
 
 ## Level 3 - Add Another Source For Messages
 
