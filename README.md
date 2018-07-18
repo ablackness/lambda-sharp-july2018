@@ -14,21 +14,21 @@ The following tools and accounts are required to complete these instructions.
 - [Complete Step 1 of the AWS Lambda Getting Started Guide](http://docs.aws.amazon.com/lambda/latest/dg/setup.html)
   - Setup an AWS account
   - [Setup the AWS CLI](https://docs.aws.amazon.com/lambda/latest/dg/setup-awscli.html)
-- .NET Core 2+ is required
+- .NET Core 2.1 is required
   - <https://www.microsoft.com/net/learn/get-started>
 
 ## Level 0 - Setup λ#
 - Ensure you have your AWS credentials file set up in the .aws folder under your home directory
-- Clone λ# repository <https://github.com/LambdaSharp/LambdaSharpTool>
-- Clone Messages repository <https://github.com/LambdaSharp/July2018-LambdaSharp>
+- Clone λ# repo <https://github.com/LambdaSharp/LambdaSharpTool>
+- Clone Messages App repo <https://github.com/LambdaSharp/July2018-LambdaSharp>
 - Setup command alias for the LambdaSharp tool
   - `$LAMBDASHARP=/path/to/LambdaSharpRepo`
   - `alias lst="dotnet run -p $LAMBDASHARP/src/MindTouch.LambdaSharp.Tool/MindTouch.LambdaSharp.Tool.csproj --"`
 - Bootstrap deployment
   - This step provides some necessary infrastructure to your AWS account.
-  - `lst deploy --bootstrap --deployment {DeploymentName} --input /path/to/LambdaSharpRepo/BootStrap/LambdaSharp/Deploy.yml`
+  - `lst deploy --bootstrap --deployment {DeploymentName} --input $LAMBDASHARP/BootStrap/LambdaSharp/Deploy.yml`
 - Deploy the Messages stack to the same deployment
-  - `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/BootStrap/LambdaSharp/Deploy.yml`
+  - `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml`
 
 Now that you have deployed the Messages stack you will have the following infrastructure in your AWS account:
 - (DynamoDB Table) MessageTable
@@ -47,6 +47,8 @@ Now that you have deployed the Messages stack you will have the following infras
   - Sends payload to _GetMessages_ Lambda function
 - (IAM Role)
   - All necessary permissioning is granted
+
+Once the stack is deployed you can post to the API endpoint that is output by the tool. The body of the request will be stored as a message in DynamoDB. All messages can be retrieved by issuing a GET request to the same endpoint.
 
 ## Level 1 - Implement Bulk Load Lambda Function
 
