@@ -22,13 +22,21 @@ The following tools and accounts are required to complete these instructions.
 - Clone λ# repo <https://github.com/LambdaSharp/LambdaSharpTool>
 - Clone Messages App repo <https://github.com/LambdaSharp/July2018-LambdaSharp>
 - Setup command alias for the LambdaSharp tool
-  - `$LAMBDASHARP=/path/to/LambdaSharpRepo`
-  - `alias lst="dotnet run -p $LAMBDASHARP/src/MindTouch.LambdaSharp.Tool/MindTouch.LambdaSharp.Tool.csproj --"`
+```bash
+export LAMBDASHARP=/path/to/LambdaSharpRepo
+alias lst="dotnet run -p $LAMBDASHARP/src/MindTouch.LambdaSharp.Tool/MindTouch.LambdaSharp.Tool.csproj --"
+```
 - Bootstrap deployment
   - This step provides some necessary infrastructure to your AWS account.
-  - `lst deploy --bootstrap --deployment {DeploymentName} --input $LAMBDASHARP/BootStrap/LambdaSharp/Deploy.yml`
+```bash
+lst deploy --bootstrap --deployment {DeploymentName} --input $LAMBDASHARP/BootStrap/LambdaSharp/Deploy.yml
+```
+
+
 - Deploy the Messages stack to the same deployment
-  - `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml`
+```bash
+lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml
+```
 
 Now that you have deployed the Messages stack you will have the following infrastructure in your AWS account:
 - (DynamoDB Table) MessageTable
@@ -48,24 +56,34 @@ Now that you have deployed the Messages stack you will have the following infras
 - (IAM Role)
   - All necessary permissioning is granted
 
-Once the stack is deployed you can post to the API endpoint that is output by the tool. The body of the request will be stored as a message in DynamoDB. All messages can be retrieved by issuing a GET request to the same endpoint.
+Once the stack is deployed you can post to the API endpoint that is output by the tool. The body of the request will be 
+stored as a message in DynamoDB. All messages can be retrieved by issuing a GET request to the same endpoint.
 
 ## Level 1 - Implement Bulk Load Lambda Function
 
-The S3 bucket that we created sends CreateObject notifications to the LoadMessages Lambda function. This function, however, does not do anything with the message. The challenge here is to complete the Lambda function code so that it will read the contents of the text file that was uploaded and consider each line a message that should be written into the DynamoDB table.
+The S3 bucket that we created sends CreateObject notifications to the LoadMessages Lambda function. This function, however, 
+does not do anything with the message. The challenge here is to complete the Lambda function code so that it will read the 
+contents of the text file that was uploaded and consider each line a message that should be written into the DynamoDB table.
 
-Running `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml` again will update the Cloudformation stack with all of your latest changes. Once you have deployed your code upload the text file located at `/path/to/MessagesAppRepo/SampleTextMessages.txt` to the IngestionBucket, which will invoke the bulk load Lambda function. After a few seconds send a GET request to the API Gateway endpoint to verify the messages were added to the data store.
+Running `lst deploy --deployment [DEPLOYMENT NAME] --input /path/to/July2018-LambdaSharp/Deploy.yml` again will update 
+the Cloudformation stack with all of your latest changes. 
+Once you have deployed your code upload the text file located at `/path/to/MessagesAppRepo/SampleTextMessages.txt` to the 
+IngestionBucket, which will invoke the bulk load Lambda function. 
+After a few seconds send a GET request to the API Gateway endpoint to verify the messages were added to the data store.
 
-NOTES: 
-- The "source" field should be "S3" here.
-- To simplify things, all needed DynamoDB functionallity has been abstracted in the Messages.Tables library so you will not need to interact with it directly.
-- Be cautious of the fact that the DynamoDB calls are asyncronous and must be completed before the Lambda function returns.
+> **NOTES:** 
+>
+> - The "source" field should be "S3" here.
+> - To simplify things, all needed DynamoDB functionallity has been abstracted in the Messages.Tables library so you will not need to interact with it directly.
+> - Be cautious of the fact that the DynamoDB calls are asyncronous and must be completed before the Lambda function returns.
 
 ## Level 2 - Add DeleteMessages Lambda Function
 
 The next piece of functionality we would like to add is the ability to clear out all messages from the DynamoDB table. Add a new entry under the `Functions` section of Deploy.yml for _DeleteMessages_. A new C# project similar to those that exist for the other Lambda functions will need to be added. The λ# tool uses naming conventions to find the project and provides a utility to create a new project which follows the convention and contains all necessary references. In the directory with the Deploy.yml file execute the following command:
 
-`lst new function --name Messages.DeleteMessages`
+```bash
+lst new function --name Messages.DeleteMessages
+```
 
 The new function inherits from ALambdaFunction, which has limited functionality. Since we would like this to be an API Gateway function you can replace `ALambdaFunction` at the class definition with `ALambdaApiGatewayFunction`. You can then remove the `Task<object> FunctionHandlerAsync(Stream stream, ILambdaContext context)` method. Next add a method with the signature `override Task<APIGatewayProxyResponse> HandleRequestAsync(APIGatewayProxyRequest request, ILambdaContext context)` as that is required by `ALambdaApiGatewayFunction`.
 
@@ -79,7 +97,7 @@ We can now add messages to the DynamoDB table via API Gateway and S3. Choose ano
 
 Create a new stack (new Deploy.yml file and corresponding csprojs) that will interact with the DynamoDB table. Adding the key `Export` with a value of `dynamo` will populate the value of the DynamoDB table's name `/{Deployment}/Messages/dynamo` in parameter store since 'Messages' is the name specified in this deploy file. In your new deploy file add the following section under `Parameters`:
 
-```
+```yaml
   - Name: MessageTable
     Description: Imported DynamoDb table for storing received messages
     Import: Messages/dynamo
@@ -90,10 +108,21 @@ Create a new stack (new Deploy.yml file and corresponding csprojs) that will int
 
 With this section you will have read access to the DynamoDB talbe from the Messages stack and you will be able to access the name of the table within the Lambda function with the line `var tableName = config.ReadText("MessageTable");` in the `InitializeAsync` method.
 
-NOTES:
-- The Name value in the root of the Deploy file must be different than any other stack you have defined (in this case, Messages).
+> **NOTES:**
+>
+> The Name value in the root of the Deploy file must be different than any other stack you have defined (in this case, Messages).
 
 
 ## Teardown
 
-Since all of the infrastructure was deployed with CloudFormation it is easy to get rid of all of it. In the AWS console navigate to the CloudFormation dashboard. Find your stack (it will me named {Deployment}-Messages). Click the checkbox next to it, click the `Actions` button, and select `Change termination protection`. When the dialog pops up click the `Yes, Disable` button. After the page refreshes click `Actions` again and select `Delete Stack` then confirm when the dialog pops up. The stack will change status to `DELETE_IN_PROGRESS` for about a minute then you will see that it changes to `DELETE_FAILED` after a refresh of the page. The delete fails since we have created an S3 bucket which cannot be automatically deleted by CloudFormation. The next step is to once again select `Actions` and `Delete Stack`. This time when the confirmation dialog pops up click the checkbox for IngestionBucket, acknowledging that it will not be deleted before clicking `Yes, Delete`. Repeat this process for the {Deployment}-LambdaSharp stack then, navigate to the S3 console to delete the S3 buckets that were created for those two stacks.
+Since all of the infrastructure was deployed with CloudFormation it is easy to get rid of all of it. In the AWS console navigate to the CloudFormation dashboard. Find your stack (it will me named {Deployment}-Messages). 
+Click the checkbox next to it, click the `Actions` button, and select `Change termination protection`. When the dialog pops up click the `Yes, Disable` button. 
+After the page refreshes click `Actions` again and select `Delete Stack` then confirm when the dialog pops up. 
+
+The stack will change status to `DELETE_IN_PROGRESS` for about a minute then you will see that it changes to `DELETE_FAILED` after a refresh of the page. 
+The delete fails since we have created an S3 bucket which cannot be automatically deleted by CloudFormation. 
+
+The next step is to once again select `Actions` and `Delete Stack`. 
+This time when the confirmation dialog pops up click the checkbox for IngestionBucket, acknowledging that it will not be deleted before clicking `Yes, Delete`.
+ 
+Repeat this process for the {Deployment}-LambdaSharp stack then, navigate to the S3 console to delete the S3 buckets that were created for those two stacks.
