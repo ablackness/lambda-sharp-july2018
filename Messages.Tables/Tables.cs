@@ -27,6 +27,19 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
 namespace Messages.Tables {
+    public static class Chunker {
+        public static IEnumerable<IEnumerable<T>> Chunk<T>(this IEnumerable<T> list, int chunkSize) {
+            if (chunkSize <= 0)  {
+                throw new ArgumentException("chunkSize must be greater than 0.");
+            }
+ 
+            while (list.Any()) {
+                yield return list.Take(chunkSize);
+                list = list.Skip(chunkSize);
+            }
+        }
+    }
+    
     public class Message {
 
         //--- Properties ---
@@ -65,7 +78,6 @@ namespace Messages.Tables {
         public async Task<IEnumerable<Message>> ListMessagesAsync() {
             var response = await _dynamoClient.ScanAsync(new ScanRequest {
                 TableName = _tableName,
-                Limit = 10
             });
             return response.Items.Select(item => new Message {
                 MessageId = item[MESSAGE_ID].S,
@@ -80,7 +92,13 @@ namespace Messages.Tables {
             });
         }
          
-        public Task BatchDeleteMessagesAsync(IEnumerable<string> messageIds) {
+        public async Task BatchDeleteMessagesAsync(IEnumerable<string> messageIds) {
+            foreach (var chunk in messageIds.Chunk(10)) { 
+                await BatchDeleteAsync(chunk);
+            }
+        }
+        
+        private Task BatchDeleteAsync(IEnumerable<string> messageIds) {
             var requests = messageIds.Select(x =>
                 new WriteRequest(
                     new DeleteRequest(
@@ -93,8 +111,14 @@ namespace Messages.Tables {
             var request = new BatchWriteItemRequest(new Dictionary<string, List<WriteRequest>> { { _tableName, requests } });
             return _dynamoClient.BatchWriteItemAsync(request);
         }
-
-        public Task BatchInsertMessagesAsync(IEnumerable<Message> messages) {
+        
+        public async Task BatchInsertMessagesAsync(IEnumerable<Message> messages) {
+            foreach (var chunk in messages.Chunk(25)) { 
+                await BatchInsertAsync(chunk);
+            }
+        }
+        
+        private Task BatchInsertAsync(IEnumerable<Message> messages) {
             var requests = messages.Select(x =>
                 new WriteRequest(
                     new PutRequest(
