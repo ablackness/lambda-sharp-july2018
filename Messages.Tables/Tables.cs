@@ -95,6 +95,9 @@ namespace Messages.Tables {
         }
 
         public Task BatchInsertMessagesAsync(IEnumerable<Message> messages) {
+            if(messages.Count() > 25) {
+                throw new Exception("Message count exceeded 25. Please limit message count to 25 or less.");
+            }
             var requests = messages.Select(x =>
                 new WriteRequest(
                     new PutRequest(

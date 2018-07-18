@@ -54,6 +54,8 @@ Once the stack is deployed you can post to the API endpoint that is output by th
 
 The S3 bucket that we created sends CreateObject notifications to the LoadMessages Lambda function. This function, however, does not do anything with the message. The challenge here is to complete the Lambda function code so that it will read the contents of the text file that was uploaded and consider each line a message that should be written into the DynamoDB table.
 
+Running `lst deploy --deployment {DeploymentName} --input /path/to/MessagesAppRepo/Deploy.yml` again will update the Cloudformation stack with all of your latest changes. Once you have deployed your code upload the text file located at `/path/to/MessagesAppRepo/SampleTextMessages.txt` to the IngestionBucket, which will invoke the bulk load Lambda function. After a few seconds send a GET request to the API Gateway endpoint to verify the messages were added to the data store.
+
 NOTES: 
 - The "source" field should be "S3" here.
 - To simplify things, all needed DynamoDB functionallity has been abstracted in the Messages.Tables library so you will not need to interact with it directly.
@@ -75,12 +77,12 @@ We can now add messages to the DynamoDB table via API Gateway and S3. Choose ano
 
 ![boss](http://images2.fanpop.com/image/photos/10400000/Bowser-nintendo-villains-10403203-500-413.jpg)
 
-Create a new stack (new Deploy.yml file and corresponding csprojs) that will interact with the DynamoDB table. Adding the key `Export` with a value of `/{{Deployment}}/dynamo` will populate the value of the DynamoDB table's name in that location within parameter store. In your new deploy file add the following section under `Parameters`:
+Create a new stack (new Deploy.yml file and corresponding csprojs) that will interact with the DynamoDB table. Adding the key `Export` with a value of `dynamo` will populate the value of the DynamoDB table's name `/{Deployment}/Messages/dynamo` in parameter store since 'Messages' is the name specified in this deploy file. In your new deploy file add the following section under `Parameters`:
 
 ```
   - Name: MessageTable
     Description: Imported DynamoDb table for storing received messages
-    Import: /{{Deployment}}/dynamo
+    Import: Messages/dynamo
     Resource:
       Type: AWS::DynamoDB::Table
       Allow: Read
