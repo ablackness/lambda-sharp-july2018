@@ -20,9 +20,12 @@
  */
 
 using System;
+using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using Amazon.S3;
+using Amazon.S3.Model;
 using Messages.Tables;
 using MindTouch.LambdaSharp;
 using Amazon.S3.Util;
@@ -35,7 +38,7 @@ namespace Messages.LoadMessages {
 
     public class Function : ALambdaFunction<S3EventNotification> {
 
-        //-- Fields ---
+        //--- Fields ---
         private MessageTable _table;
         private IAmazonS3 _s3Client;
 
@@ -51,12 +54,33 @@ namespace Messages.LoadMessages {
             LogInfo(JsonConvert.SerializeObject(message));
             
             // Use S3EventNotification to get location of the file which was uploaded
-
+            var bucket = message.Records[0].S3.Bucket.Name;
+            var key = message.Records[0].S3.Object.Key;
             // Read S3 object contents
-                
+            var request = new GetObjectRequest{
+                BucketName = bucket,
+                Key = key
+            };
+            var text = "";
+            using(GetObjectResponse response = await _s3Client.GetObjectAsync(request))
+            using(Stream responseStream = response.ResponseStream)
+            using(StreamReader reader = new StreamReader(responseStream)){
+                text = await reader.ReadToEndAsync();
+            }
+
             // Separate messages by line ending
+              var splitText = text.Split('\n');
 
             // Use BatchInsertMessagesAsync from the Messages.Tables library to write messages to DynamoDB
+            var messages = new List<Message>();
+            for (int i = 0;i < splitText.Length; i++) {
+                LogInfo(splitText[i]);
+                var msg = new Message();
+                msg.Source = "S3";
+                msg.Text = splitText[i];
+                messages.Add(msg);
+            }
+            await _table.BatchInsertMessagesAsync(messages);
             return null;
         }
     }
